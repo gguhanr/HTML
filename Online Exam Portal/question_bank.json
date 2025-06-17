@@ -1,0 +1,52 @@
+localStorage.setItem('questions', JSON.stringify([
+  {
+    "qText": "What is the size of int in Java?",
+    "options": ["4 bytes", "2 bytes", "8 bytes", "Depends on system"],
+    "correct": 0
+  },
+  {
+    "qText": "Which keyword is used to inherit a class in Java?",
+    "options": ["implement", "inherits", "extends", "super"],
+    "correct": 2
+  },
+  {
+    "qText": "Which of these is not a Java access modifier?",
+    "options": ["public", "private", "protected", "extern"],
+    "correct": 3
+  },
+  {
+    "qText": "What is JVM?",
+    "options": ["Java Variable Method", "Java Virtual Machine", "Java Verified Mode", "Joint Virtual Machine"],
+    "correct": 1
+  },
+  {
+    "qText": "Which exception is thrown when array is accessed out of bounds?",
+    "options": ["NullPointerException", "ArithmeticException", "ArrayIndexOutOfBoundsException", "IndexNotFoundException"],
+    "correct": 2
+  },
+  {
+    "qText": "Which method is the entry point of a Java program?",
+    "options": ["start()", "main()", "run()", "execute()"],
+    "correct": 1
+  },
+  {
+    "qText": "Which of the following is not a feature of Java?",
+    "options": ["Object-oriented", "Platform independent", "Use of pointers", "Robust"],
+    "correct": 2
+  },
+  {
+    "qText": "Which class is the parent of all classes in Java?",
+    "options": ["Object", "Class", "Super", "Parent"],
+    "correct": 0
+  },
+  {
+    "qText": "Which of these are valid Java loops?",
+    "options": ["for", "while", "do-while", "All of the above"],
+    "correct": 3
+  },
+  {
+    "qText": "Which collection allows unique elements only?",
+    "options": ["List", "Set", "Map", "Queue"],
+    "correct": 1
+  }
+]));
