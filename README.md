@@ -5,3 +5,4 @@
 4. Movie Ticket Booking
 5. Online Exam Portal
 6. Inventory Management System
+7. Currency Converter
