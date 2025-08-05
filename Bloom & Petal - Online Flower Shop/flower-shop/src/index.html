@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bloom & Petal - Online Flower Shop</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-3xl font-display text-pink-600">Bloom & Petal</h1>
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+                <span id="cart-count" class="ml-2 text-lg font-bold text-gray-700">0</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+        <section class="text-center mb-16">
+            <h2 class="text-4xl md:text-5xl font-display text-gray-800 mb-4">Fresh Flowers, Delivered with Love</h2>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">Select your favorite blooms, choose the quantity, and send your order directly to us via WhatsApp.</p>
+        </section>
+
+        <section id="flower-selection" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Flower products will be injected here by JavaScript -->
+        </section>
+
+        <section id="order-summary" class="mt-16 bg-white p-8 rounded-2xl shadow-lg">
+            <h3 class="text-3xl font-display text-gray-800 mb-6 border-b pb-4">Your Order</h3>
+            <div id="cart-items" class="mb-6">
+                <p class="text-gray-500">Your cart is empty. Add some flowers to get started!</p>
+            </div>
+            <div class="border-t pt-6">
+                <div class="flex justify-between items-center text-2xl font-bold">
+                    <span class="text-gray-800">Total:</span>
+                    <span id="total-cost" class="text-pink-600">₹0.00</span>
+                </div>
+            </div>
+            <div class="mt-8 text-center">
+                <button id="whatsapp-btn" class="bg-green-500 text-white font-bold py-4 px-8 rounded-lg w-full md:w-auto hover:bg-green-600 transition-all duration-300 transform hover:scale-105 flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.886-.001 2.225.651 4.315 1.731 6.086l.06.098-1.165 4.251 4.356-1.14z"/></svg>
+                    Send Order via WhatsApp
+                </button>
+                <p class="text-sm text-gray-500 mt-4">You will be redirected to WhatsApp to send your order.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-white mt-16 border-t">
+        <div class="container mx-auto px-6 py-8 text-center text-gray-600">
+            <p>&copy; 2024 Bloom & Petal. All Rights Reserved.</p>
+            <p class="text-sm">Designed with ❤️</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
