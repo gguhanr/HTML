@@ -6,3 +6,4 @@
 5. Online Exam Portal
 6. Inventory Management System
 7. Currency Converter
+8. Bloom & Petal - Online Flower Shop
