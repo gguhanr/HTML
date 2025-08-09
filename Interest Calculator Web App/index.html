@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interest Calculator</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="light">
+
+<div class="theme-toggle">
+    <button id="themeBtn">🌙 Dark Mode</button>
+</div>
+
+<div class="calculator">
+    <h1>Interest Calculator</h1>
+
+    <label for="principal">Principal (₹):</label>
+    <input type="number" id="principal" placeholder="Enter principal amount">
+
+    <label for="rate">Rate of Interest (%):</label>
+    <input type="number" id="rate" placeholder="Enter rate">
+
+    <label for="time">Time (Years):</label>
+    <input type="number" id="time" placeholder="Enter time in years">
+
+    <label for="type">Interest Type:</label>
+    <select id="type">
+        <option value="simple">Simple Interest</option>
+        <option value="compound">Compound Interest</option>
+    </select>
+
+    <button onclick="calculateInterest()">Calculate</button>
+
+    <div class="result" id="result">Result will appear here...</div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

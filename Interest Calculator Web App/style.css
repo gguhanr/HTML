@@ -1,0 +1,175 @@
+/* ===== General Body Styles ===== */
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(120deg, #89f7fe, #66a6ff);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    transition: background 0.4s, color 0.4s;
+    padding: 20px;
+}
+
+/* ===== Theme Toggle Button ===== */
+.theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+.theme-toggle button {
+    background: #333;
+    color: white;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: 0.3s;
+}
+.theme-toggle button:hover {
+    transform: scale(1.05);
+}
+
+/* ===== Calculator Card ===== */
+.calculator {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0px 8px 25px rgba(0,0,0,0.25);
+    width: 100%;
+    max-width: 500px;
+    animation: fadeIn 1s ease-in-out;
+    transition: background 0.4s, color 0.4s;
+}
+
+/* ===== Title Styling ===== */
+h1 {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #ff5722;
+    transition: color 0.4s;
+}
+body.dark h1 {
+    color: #ffd54f;
+}
+
+/* ===== Labels ===== */
+label {
+    font-weight: bold;
+    display: block;
+    margin-top: 15px;
+    font-size: 18px;
+}
+
+/* ===== Inputs & Select ===== */
+input, select, button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 6px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    font-size: 18px;
+    transition: 0.3s;
+}
+
+/* ===== Input Animation on Focus ===== */
+input:focus, select:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.6);
+    transform: scale(1.02);
+}
+
+/* ===== Button Styles ===== */
+button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+    margin-top: 20px;
+    font-weight: bold;
+    font-size: 18px;
+}
+button:hover {
+    background: #45a049;
+    transform: scale(1.05);
+}
+
+/* ===== Result Box ===== */
+.result {
+    margin-top: 20px;
+    font-size: 18px;
+    color: #222;
+    background: #f8f8f8;
+    padding: 15px;
+    border-radius: 10px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.5s ease-in-out;
+}
+
+/* ===== Animation ===== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+.show {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}
+
+/* ===== Dark Theme Styles ===== */
+body.dark {
+    background: linear-gradient(120deg, #232526, #414345);
+    color: white;
+}
+body.dark .calculator {
+    background: #2b2b2b;
+    color: white;
+}
+body.dark input, body.dark select {
+    background: #3a3a3a;
+    color: white;
+    border: 1px solid #555;
+}
+body.dark .result {
+    background: #444;
+    color: white;
+}
+body.dark .theme-toggle button {
+    background: #f1f1f1;
+    color: black;
+}
+
+/* ===== Responsive Design ===== */
+@media screen and (max-width: 768px) {
+    .calculator {
+        padding: 20px;
+    }
+    h1 {
+        font-size: 24px;
+    }
+    label, input, select, button {
+        font-size: 16px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+    .calculator {
+        padding: 15px;
+        border-radius: 15px;
+    }
+    h1 {
+        font-size: 20px;
+    }
+    label, input, select, button {
+        font-size: 14px;
+    }
+}
