@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live GPS Distance & Speed Tracker</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for a clean UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles to supplement Tailwind */
+        body {
+            font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent; /* Disable tap highlight on mobile */
+        }
+
+        /* Button active state for better feedback on mobile */
+        .btn:active {
+            transform: scale(0.95);
+            filter: brightness(0.9);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 flex items-center justify-center min-h-screen transition-colors duration-300 py-8">
+
+    <div class="w-full max-w-md mx-4 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 space-y-6">
+        
+        <!-- Header -->
+        <header class="text-center border-b border-gray-200 dark:border-gray-700 pb-4">
+            <h1 class="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">GPS Tracker</h1>
+            <p id="status" class="text-sm text-gray-500 dark:text-gray-400 mt-1">Press "Start" to begin tracking.</p>
+        </header>
+
+        <!-- Display Area -->
+        <main class="space-y-4">
+            <!-- Total Distance -->
+            <div class="bg-gray-100 dark:bg-gray-700 p-6 rounded-xl text-center">
+                <h2 class="text-base font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Distance</h2>
+                <p id="distance" class="text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mt-1">0.000 KM</p>
+            </div>
+
+            <!-- Current Speed -->
+            <div class="bg-emerald-50 dark:bg-emerald-900/50 p-6 rounded-xl text-center border border-emerald-200 dark:border-emerald-800">
+                <h2 class="text-base font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Current Speed</h2>
+                <p id="speed" class="text-4xl md:text-5xl font-bold text-emerald-800 dark:text-emerald-300 mt-1">0.0 KM/H</p>
+            </div>
+
+            <!-- Coordinates Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-gray-100 dark:bg-gray-700/50 p-4 rounded-xl text-center">
+                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Latitude</h3>
+                    <p id="latitude" class="text-lg font-semibold mt-1">-</p>
+                </div>
+                <div class="bg-gray-100 dark:bg-gray-700/50 p-4 rounded-xl text-center">
+                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Longitude</h3>
+                    <p id="longitude" class="text-lg font-semibold mt-1">-</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Control Buttons -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
+            <button id="startButton" class="btn w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                Start
+            </button>
+            <button id="stopButton" class="btn w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                Stop
+            </button>
+            <button id="resetButton" class="btn w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg transition duration-300 sm:col-span-3">
+                Reset
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="absolute bottom-4 text-center w-full text-gray-500 dark:text-gray-400 text-sm">
+        Developed by SanStudio
+    </footer>
+
+    <script>
+        // DOM Element References
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const resetButton = document.getElementById('resetButton');
+        const statusDisplay = document.getElementById('status');
+        const distanceDisplay = document.getElementById('distance');
+        const speedDisplay = document.getElementById('speed'); // New element for speed
+        const latitudeDisplay = document.getElementById('latitude');
+        const longitudeDisplay = document.getElementById('longitude');
+
+        // State variables
+        let watchId = null;
+        let totalDistance = 0;
+        let lastPosition = null;
+        let currentSpeed = 0; // New state for speed
+
+        /**
+         * Converts degrees to radians.
+         * @param {number} deg - The value in degrees.
+         * @returns {number} The value in radians.
+         */
+        function toRad(deg) {
+            return deg * (Math.PI / 180);
+        }
+
+        /**
+         * Calculates the distance between two GPS coordinates using the Haversine formula.
+         * @param {GeolocationCoordinates} coords1 - The first set of coordinates.
+         * @param {GeolocationCoordinates} coords2 - The second set of coordinates.
+         * @returns {number} The distance in kilometers.
+         */
+        function haversineDistance(coords1, coords2) {
+            const R = 6371; // Earth's radius in kilometers
+            const dLat = toRad(coords2.latitude - coords1.latitude);
+            const dLon = toRad(coords2.longitude - coords1.longitude);
+            const lat1 = toRad(coords1.latitude);
+            const lat2 = toRad(coords2.latitude);
+
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            
+            return R * c;
+        }
+
+        /**
+         * Updates the UI with the latest tracking data.
+         */
+        function updateUI() {
+            distanceDisplay.textContent = `${totalDistance.toFixed(3)} KM`;
+            speedDisplay.textContent = `${currentSpeed.toFixed(1)} KM/H`; // Update speed display
+            
+            if (lastPosition) {
+                latitudeDisplay.textContent = lastPosition.latitude.toFixed(6);
+                longitudeDisplay.textContent = lastPosition.longitude.toFixed(6);
+            } else {
+                latitudeDisplay.textContent = '-';
+                longitudeDisplay.textContent = '-';
+            }
+        }
+
+        /**
+         * Starts watching the user's position.
+         */
+        function startTracking() {
+            if (!navigator.geolocation) {
+                statusDisplay.textContent = "Geolocation not supported.";
+                return;
+            }
+
+            statusDisplay.textContent = "Waiting for permission...";
+            
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
+
+            watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, options);
+            
+            startButton.disabled = true;
+            stopButton.disabled = false;
+        }
+
+        /**
+         * Stops watching the user's position.
+         */
+        function stopTracking() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+                statusDisplay.textContent = "Tracking stopped.";
+                startButton.disabled = false;
+                stopButton.disabled = true;
+            }
+        }
+        
+        /**
+         * Resets all tracking data and UI elements.
+         */
+        function resetTracker() {
+            stopTracking();
+            totalDistance = 0;
+            currentSpeed = 0; // Reset speed
+            lastPosition = null;
+            statusDisplay.textContent = 'Press "Start" to begin tracking.';
+            updateUI();
+        }
+
+        /**
+         * Success callback for watchPosition.
+         * @param {GeolocationPosition} position - The position object from the Geolocation API.
+         */
+        function handleSuccess(position) {
+            const currentPositionCoords = position.coords;
+            statusDisplay.textContent = "Tracking...";
+            
+            // Calculate and update speed
+            // The Geolocation API provides speed in meters/second. Convert to KM/H.
+            if (currentPositionCoords.speed !== null) {
+                currentSpeed = currentPositionCoords.speed * 3.6;
+            } else {
+                currentSpeed = 0; // If speed is not available, show 0
+            }
+            
+            // Calculate and update distance
+            if (lastPosition) {
+                const distanceIncrement = haversineDistance(lastPosition, currentPositionCoords);
+                totalDistance += distanceIncrement;
+            }
+
+            lastPosition = currentPositionCoords;
+            updateUI();
+        }
+
+        /**
+         * Error callback for watchPosition.
+         * @param {GeolocationPositionError} error - The error object.
+         */
+        function handleError(error) {
+            stopTracking(); // Stop trying to track on error
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    statusDisplay.textContent = "Error: Location permission denied.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    statusDisplay.textContent = "Error: Location information is unavailable.";
+                    break;
+                case error.TIMEOUT:
+                    statusDisplay.textContent = "Error: The request to get user location timed out.";
+                    break;
+                default:
+                    statusDisplay.textContent = "Error: An unknown error occurred.";
+                    break;
+            }
+        }
+
+        // Event Listeners for buttons
+        startButton.addEventListener('click', startTracking);
+        stopButton.addEventListener('click', stopTracking);
+        resetButton.addEventListener('click', resetTracker);
+    </script>
+</body>
+</html>
