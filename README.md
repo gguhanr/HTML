@@ -17,3 +17,5 @@ Every project within this repository utilizes the following foundational tools:
 ## 💡 Getting Started
 
 To view any of the projects, simply clone the repository and open the corresponding **`index.html`** file in your modern web browser. No server setup is required!
+
+
