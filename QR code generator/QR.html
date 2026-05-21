@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1c1c28;
+      --surface3: #252535;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.14);
+      --text: #f0f0f8;
+      --text2: #8888aa;
+      --text3: #55556a;
+      --accent: #7c6af7;
+      --accent2: #c084fc;
+      --green: #34d399;
+      --red: #f87171;
+      --amber: #fbbf24;
+    }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 10% 5%, rgba(124,106,247,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 90% 90%, rgba(192,132,252,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 50% 50%, rgba(52,211,153,0.04) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 2.5rem;
+      gap: 1rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-icon svg { width: 22px; height: 22px; fill: white; }
+
+    h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+
+    h1 span {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .version-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent);
+      background: rgba(124,106,247,0.12);
+      border: 1px solid rgba(124,106,247,0.25);
+      padding: 0.3rem 0.7rem;
+      border-radius: 100px;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 700px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 1.5rem;
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text3);
+      margin-bottom: 0.75rem;
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .input-group svg {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--text3);
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      border-radius: 12px;
+      padding: 0.85rem 1rem 0.85rem 2.75rem;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      border-color: var(--accent);
+      background: var(--surface3);
+    }
+
+    .char-count {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text3);
+      pointer-events: none;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 1.25rem;
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 4px;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 0.5rem;
+      border-radius: 7px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text2);
+      transition: all 0.2s;
+      letter-spacing: 0.02em;
+    }
+
+    .tab.active {
+      background: var(--surface3);
+      color: var(--text);
+      border: 1px solid var(--border2);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .row { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; }
+
+    .field { flex: 1; }
+    .field label {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--text2);
+      margin-bottom: 0.4rem;
+      font-weight: 600;
+    }
+
+    .field input[type="text"] { padding: 0.65rem 0.85rem; }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1.25rem 0;
+    }
+
+    .customization-section { margin-bottom: 1.25rem; }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .option-label {
+      font-size: 0.82rem;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .option-sublabel {
+      font-size: 0.72rem;
+      color: var(--text2);
+    }
+
+    .color-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+
+    .color-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s, border-color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.selected { border-color: white; transform: scale(1.1); }
+
+    .color-picker-wrap {
+      position: relative;
+      width: 28px;
+      height: 28px;
+    }
+
+    .color-picker-wrap input[type="color"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .custom-color-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px dashed var(--border2);
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--text3);
+      transition: border-color 0.2s;
+    }
+
+    .custom-color-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex: 1;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--surface3);
+      -webkit-appearance: none;
+      appearance: none;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: 2px solid white;
+    }
+
+    .range-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text2);
+      min-width: 32px;
+      text-align: right;
+    }
+
+    .select-wrap {
+      flex: 1;
+    }
+
+    select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.82rem;
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    select:focus { border-color: var(--accent); }
+
+    .toggle {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--surface3);
+      border-radius: 100px;
+      border: 1px solid var(--border2);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      left: 3px;
+      top: 3px;
+      background: var(--text3);
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .toggle input:checked + .toggle-slider { background: rgba(124,106,247,0.3); border-color: var(--accent); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); background: var(--accent); }
+
+    .qr-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .qr-frame {
+      width: 100%;
+      aspect-ratio: 1;
+      background: white;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      transition: box-shadow 0.3s;
+    }
+
+    .qr-frame:hover {
+      box-shadow: 0 0 0 3px rgba(124,106,247,0.3), 0 8px 40px rgba(0,0,0,0.4);
+    }
+
+    #qr-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 90%;
+      height: 90%;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      color: #999;
+    }
+
+    .empty-state svg {
+      width: 56px;
+      height: 56px;
+      stroke: #ccc;
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .empty-state p { font-size: 0.82rem; color: #aaa; font-family: 'DM Mono', monospace; }
+
+    .qr-meta {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text3);
+    }
+
+    .qr-status {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text3);
+    }
+
+    .status-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+    .action-row {
+      display: flex;
+      gap: 0.75rem;
+      width: 100%;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 0.75rem;
+      border-radius: 12px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--surface3);
+      color: var(--text);
+      border-color: var(--border2);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(124,106,247,0.4);
+    }
+
+    .btn:active:not(:disabled) { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    .formats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      width: 100%;
+    }
+
+    .format-btn {
+      padding: 0.6rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+
+    .format-btn:hover:not(:disabled) {
+      background: var(--surface3);
+      color: var(--text);
+      border-color: var(--border2);
+    }
+
+    .format-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--surface3);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      padding: 0.7rem 1.2rem;
+      border-radius: 100px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast-icon { font-size: 14px; }
+
+    .logo-upload-area {
+      border: 2px dashed var(--border2);
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 0.75rem;
+    }
+
+    .logo-upload-area:hover {
+      border-color: var(--accent);
+      background: rgba(124,106,247,0.05);
+    }
+
+    .logo-upload-area p {
+      font-size: 0.78rem;
+      color: var(--text2);
+      margin-top: 0.3rem;
+    }
+
+    .logo-upload-area svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--text3);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    #logo-input { display: none; }
+
+    .logo-preview {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem;
+      background: var(--surface2);
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+    }
+
+    .logo-preview img {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+
+    .logo-preview-text { flex: 1; font-size: 0.78rem; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .logo-remove {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(248,113,113,0.15);
+      border: none;
+      color: var(--red);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .logo-remove:hover { background: rgba(248,113,113,0.3); }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <header>
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24"><path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h2v2h-2zM19 15h2v2h-2zM15 19h2v2h-2zM19 19h2v2h-2zM11 3h2v2h-2zM11 7h2v2h-2zM3 11h2v2H3zM7 11h2v2H7zM11 11h2v2h-2zM15 11h2v2h-2z"/></svg>
+        </div>
+        <div>
+          <h1>QR <span>Studio</span></h1>
+        </div>
+      </div>
+      <div class="version-badge">v2.0 · Enhanced</div>
+    </header>
+
+    <div class="main-grid">
+      <!-- Left: Controls -->
+      <div>
+        <div class="panel" style="margin-bottom: 1.25rem;">
+          <div class="section-label">Content Type</div>
+          <div class="tabs">
+            <div class="tab active" data-tab="url">URL</div>
+            <div class="tab" data-tab="text">Text</div>
+            <div class="tab" data-tab="vcard">vCard</div>
+            <div class="tab" data-tab="wifi">Wi-Fi</div>
+            <div class="tab" data-tab="email">Email</div>
+          </div>
+
+          <!-- URL Tab -->
+          <div class="tab-content active" id="tab-url">
+            <div class="input-group">
+              <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              <input type="text" id="input-url" placeholder="https://example.com" />
+              <span class="char-count" id="char-count-url">0</span>
+            </div>
+          </div>
+
+          <!-- Text Tab -->
+          <div class="tab-content" id="tab-text">
+            <div class="input-group">
+              <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+              <input type="text" id="input-text" placeholder="Enter any text…" />
+              <span class="char-count" id="char-count-text">0</span>
+            </div>
+          </div>
+
+          <!-- vCard Tab -->
+          <div class="tab-content" id="tab-vcard">
+            <div class="row">
+              <div class="field"><label>First Name</label><input type="text" id="vc-first" placeholder="Jane" /></div>
+              <div class="field"><label>Last Name</label><input type="text" id="vc-last" placeholder="Doe" /></div>
+            </div>
+            <div class="row">
+              <div class="field"><label>Phone</label><input type="text" id="vc-phone" placeholder="+1 555 0100" /></div>
+              <div class="field"><label>Email</label><input type="text" id="vc-email" placeholder="jane@example.com" /></div>
+            </div>
+            <div class="row">
+              <div class="field"><label>Company</label><input type="text" id="vc-company" placeholder="Acme Inc." /></div>
+              <div class="field"><label>Website</label><input type="text" id="vc-web" placeholder="https://acme.com" /></div>
+            </div>
+          </div>
+
+          <!-- Wi-Fi Tab -->
+          <div class="tab-content" id="tab-wifi">
+            <div class="row">
+              <div class="field"><label>Network Name (SSID)</label><input type="text" id="wf-ssid" placeholder="MyNetwork" /></div>
+              <div class="field"><label>Password</label><input type="text" id="wf-pass" placeholder="password" /></div>
+            </div>
+            <div class="option-row">
+              <div><div class="option-label">Encryption</div></div>
+              <div class="select-wrap" style="max-width: 130px;">
+                <select id="wf-enc">
+                  <option value="WPA">WPA/WPA2</option>
+                  <option value="WEP">WEP</option>
+                  <option value="">None</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Email Tab -->
+          <div class="tab-content" id="tab-email">
+            <div class="row">
+              <div class="field"><label>To</label><input type="text" id="em-to" placeholder="recipient@example.com" /></div>
+              <div class="field"><label>Subject</label><input type="text" id="em-subject" placeholder="Hello!" /></div>
+            </div>
+            <div class="field" style="margin-bottom: 0.75rem;"><label>Body</label>
+              <div class="input-group" style="margin-bottom: 0;">
+                <svg viewBox="0 0 24 24" style="top: 1rem; transform: none;"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                <input type="text" id="em-body" placeholder="Email message…" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-label">Customization</div>
+
+          <div class="customization-section">
+            <div class="option-row" style="margin-bottom: 0.5rem;">
+              <div class="option-label">Foreground</div>
+              <div class="color-row">
+                <div class="color-swatch selected" data-color="#000000" style="background:#000000;" title="Black"></div>
+                <div class="color-swatch" data-color="#1e40af" style="background:#1e40af;" title="Blue"></div>
+                <div class="color-swatch" data-color="#7c3aed" style="background:#7c3aed;" title="Purple"></div>
+                <div class="color-swatch" data-color="#0f766e" style="background:#0f766e;" title="Teal"></div>
+                <div class="color-swatch" data-color="#b91c1c" style="background:#b91c1c;" title="Red"></div>
+                <div class="color-swatch" data-color="#92400e" style="background:#92400e;" title="Amber"></div>
+                <div class="color-picker-wrap" title="Custom color">
+                  <div class="custom-color-btn">+</div>
+                  <input type="color" id="fg-color" value="#000000" />
+                </div>
+              </div>
+            </div>
+
+            <div class="option-row" style="margin-bottom: 0.5rem;">
+              <div class="option-label">Background</div>
+              <div class="color-row">
+                <div class="color-swatch selected" id="bg-swatches" data-color="#ffffff" style="background:#ffffff; border: 1px solid #ddd;" title="White"></div>
+                <div class="color-swatch" data-color="#f0f9ff" style="background:#f0f9ff;" data-bg="1" title="Sky"></div>
+                <div class="color-swatch" data-color="#faf5ff" style="background:#faf5ff;" data-bg="1" title="Lavender"></div>
+                <div class="color-swatch" data-color="#f0fdf4" style="background:#f0fdf4;" data-bg="1" title="Mint"></div>
+                <div class="color-swatch" data-color="#fff7ed" style="background:#fff7ed;" data-bg="1" title="Cream"></div>
+                <div class="color-picker-wrap" title="Custom background">
+                  <div class="custom-color-btn">+</div>
+                  <input type="color" id="bg-color" value="#ffffff" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="option-row">
+            <div><div class="option-label">Error Correction</div><div class="option-sublabel">Higher = more redundancy</div></div>
+            <div class="select-wrap" style="max-width: 100px;">
+              <select id="ecc">
+                <option value="H">High (H)</option>
+                <option value="Q">Mid (Q)</option>
+                <option value="M">Low (M)</option>
+                <option value="L">Min (L)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="option-row">
+            <div><div class="option-label">Quiet Zone</div><div class="option-sublabel">Margin around QR</div></div>
+            <div class="slider-wrap">
+              <input type="range" id="margin" min="0" max="40" value="16" step="4" />
+              <span class="range-val" id="margin-val">16px</span>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="section-label" style="margin-top: 0;">Logo Overlay</div>
+          <div id="logo-area">
+            <label for="logo-input" class="logo-upload-area" id="logo-drop">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <p>Click to upload logo (PNG, SVG)</p>
+            </label>
+            <input type="file" id="logo-input" accept="image/png,image/svg+xml,image/jpeg,image/webp" />
+          </div>
+          <div id="logo-preview-area" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- Right: QR Preview -->
+      <div class="qr-panel">
+        <div class="panel" style="width:100%; padding: 1.25rem;">
+          <div class="section-label">Preview</div>
+          <div class="qr-frame" id="qr-frame">
+            <div id="qr-container">
+              <div class="empty-state">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3" rx="0.5"/><rect x="19" y="14" width="3" height="3" rx="0.5"/><rect x="14" y="19" width="3" height="3" rx="0.5"/><rect x="19" y="19" width="3" height="3" rx="0.5"/></svg>
+                <p>Input to generate</p>
+              </div>
+            </div>
+          </div>
+          <div class="qr-meta" style="margin-top: 0.75rem;">
+            <div class="qr-status">
+              <div class="status-dot" id="status-dot"></div>
+              <span id="status-text">Idle</span>
+            </div>
+            <span id="qr-size-label">—</span>
+          </div>
+        </div>
+
+        <div style="width:100%;">
+          <div class="section-label">Export</div>
+          <div class="formats-grid">
+            <button class="format-btn" id="dl-png" disabled>
+              <svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              PNG
+            </button>
+            <button class="format-btn" id="dl-svg" disabled>
+              <svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              SVG
+            </button>
+            <button class="format-btn" id="dl-hq" disabled>
+              <svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              2× PNG
+            </button>
+            <button class="format-btn" id="copy-btn" disabled>
+              <svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <span class="toast-icon">✓</span>
+    <span id="toast-msg">Copied!</span>
+  </div>
+
+  <script>
+    const state = {
+      activeTab: 'url',
+      fgColor: '#000000',
+      bgColor: '#ffffff',
+      ecc: 'H',
+      margin: 16,
+      logoDataUrl: null,
+      logoFileName: null,
+      qrGenerated: false,
+    };
+
+    const eccMap = { H: QRCode.CorrectLevel.H, Q: QRCode.CorrectLevel.Q, M: QRCode.CorrectLevel.M, L: QRCode.CorrectLevel.L };
+
+    function getContent() {
+      const t = state.activeTab;
+      if (t === 'url') return document.getElementById('input-url').value.trim();
+      if (t === 'text') return document.getElementById('input-text').value.trim();
+      if (t === 'vcard') {
+        const f = v => document.getElementById(v).value.trim();
+        const fn = f('vc-first'), ln = f('vc-last'), ph = f('vc-phone'), em = f('vc-email'), co = f('vc-company'), wb = f('vc-web');
+        if (!fn && !ln && !ph && !em) return '';
+        return `BEGIN:VCARD\nVERSION:3.0\nN:${ln};${fn};;;\nFN:${fn} ${ln}\n${ph ? 'TEL:'+ph+'\n' : ''}${em ? 'EMAIL:'+em+'\n' : ''}${co ? 'ORG:'+co+'\n' : ''}${wb ? 'URL:'+wb+'\n' : ''}END:VCARD`;
+      }
+      if (t === 'wifi') {
+        const ssid = document.getElementById('wf-ssid').value.trim();
+        const pass = document.getElementById('wf-pass').value.trim();
+        const enc = document.getElementById('wf-enc').value;
+        if (!ssid) return '';
+        return `WIFI:T:${enc};S:${ssid};P:${pass};;`;
+      }
+      if (t === 'email') {
+        const to = document.getElementById('em-to').value.trim();
+        const sub = document.getElementById('em-subject').value.trim();
+        const body = document.getElementById('em-body').value.trim();
+        if (!to) return '';
+        return `mailto:${to}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
+      }
+      return '';
+    }
+
+    let generateTimer = null;
+    function scheduleGenerate() {
+      clearTimeout(generateTimer);
+      generateTimer = setTimeout(generate, 180);
+    }
+
+    function generate() {
+      const content = getContent();
+      const container = document.getElementById('qr-container');
+      const statusDot = document.getElementById('status-dot');
+      const statusText = document.getElementById('status-text');
+      const sizeLabel = document.getElementById('qr-size-label');
+
+      container.innerHTML = '';
+
+      if (!content) {
+        container.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3" rx="0.5"/><rect x="19" y="14" width="3" height="3" rx="0.5"/><rect x="14" y="19" width="3" height="3" rx="0.5"/><rect x="19" y="19" width="3" height="3" rx="0.5"/></svg><p>Input to generate</p></div>`;
+        document.getElementById('qr-frame').style.background = 'white';
+        statusDot.className = 'status-dot';
+        statusText.textContent = 'Idle';
+        sizeLabel.textContent = '—';
+        setExportEnabled(false);
+        state.qrGenerated = false;
+        return;
+      }
+
+      const size = Math.min(document.getElementById('qr-frame').offsetWidth * 0.9, 300);
+
+      new QRCode(container, {
+        text: content,
+        width: size,
+        height: size,
+        colorDark: state.fgColor,
+        colorLight: state.bgColor,
+        correctLevel: eccMap[state.ecc]
+      });
+
+      document.getElementById('qr-frame').style.background = state.bgColor;
+
+      setTimeout(() => {
+        const canvas = container.querySelector('canvas');
+        if (canvas && state.logoDataUrl) overlayLogo(canvas);
+        if (canvas) {
+          statusDot.className = 'status-dot active';
+          statusText.textContent = 'Ready';
+          sizeLabel.textContent = `${Math.round(size)}×${Math.round(size)}px`;
+          setExportEnabled(true);
+          state.qrGenerated = true;
+        }
+      }, 60);
+    }
+
+    function overlayLogo(canvas) {
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.onload = () => {
+        const logoSize = canvas.width * 0.22;
+        const x = (canvas.width - logoSize) / 2;
+        const y = (canvas.height - logoSize) / 2;
+        const pad = logoSize * 0.12;
+        ctx.fillStyle = state.bgColor;
+        ctx.fillRect(x - pad, y - pad, logoSize + pad * 2, logoSize + pad * 2);
+        ctx.drawImage(img, x, y, logoSize, logoSize);
+      };
+      img.src = state.logoDataUrl;
+    }
+
+    function setExportEnabled(enabled) {
+      ['dl-png', 'dl-svg', 'dl-hq', 'copy-btn'].forEach(id => {
+        document.getElementById(id).disabled = !enabled;
+      });
+    }
+
+    function downloadPNG(scale = 1) {
+      const canvas = document.getElementById('qr-container').querySelector('canvas');
+      if (!canvas) return;
+      if (scale === 1) {
+        const a = document.createElement('a');
+        a.download = 'qrcode.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+        showToast('PNG downloaded');
+        return;
+      }
+      const size = canvas.width * scale;
+      const offscreen = document.createElement('canvas');
+      offscreen.width = size;
+      offscreen.height = size;
+      const ctx = offscreen.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(canvas, 0, 0, size, size);
+      const a = document.createElement('a');
+      a.download = `qrcode_${scale}x.png`;
+      a.href = offscreen.toDataURL('image/png');
+      a.click();
+      showToast(`${scale}× PNG downloaded`);
+    }
+
+    function downloadSVG() {
+      const canvas = document.getElementById('qr-container').querySelector('canvas');
+      if (!canvas) return;
+      const dataUrl = canvas.toDataURL('image/png');
+      const size = canvas.width;
+      const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><image width="${size}" height="${size}" href="${dataUrl}"/></svg>`;
+      const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+      const a = document.createElement('a');
+      a.download = 'qrcode.svg';
+      a.href = URL.createObjectURL(blob);
+      a.click();
+      showToast('SVG downloaded');
+    }
+
+    async function copyToClipboard() {
+      const canvas = document.getElementById('qr-container').querySelector('canvas');
+      if (!canvas) return;
+      try {
+        canvas.toBlob(async blob => {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          showToast('Copied to clipboard');
+        });
+      } catch (e) {
+        showToast('Copy failed — try download');
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    // Tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        state.activeTab = tab.dataset.tab;
+        document.getElementById('tab-' + state.activeTab).classList.add('active');
+        scheduleGenerate();
+      });
+    });
+
+    // Inputs
+    ['input-url', 'input-text', 'vc-first', 'vc-last', 'vc-phone', 'vc-email', 'vc-company', 'vc-web',
+     'wf-ssid', 'wf-pass', 'em-to', 'em-subject', 'em-body'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', () => {
+        const ccId = 'char-count-' + state.activeTab;
+        const cc = document.getElementById(ccId);
+        if (cc && ['input-url', 'input-text'].includes(id)) cc.textContent = el.value.length;
+        scheduleGenerate();
+      });
+    });
+
+    document.getElementById('wf-enc').addEventListener('change', scheduleGenerate);
+
+    // FG color swatches
+    document.querySelectorAll('.color-swatch:not([data-bg])').forEach(s => {
+      s.addEventListener('click', () => {
+        document.querySelectorAll('.color-swatch:not([data-bg])').forEach(x => x.classList.remove('selected'));
+        s.classList.add('selected');
+        state.fgColor = s.dataset.color;
+        document.getElementById('fg-color').value = state.fgColor;
+        scheduleGenerate();
+      });
+    });
+
+    document.getElementById('fg-color').addEventListener('input', e => {
+      state.fgColor = e.target.value;
+      document.querySelectorAll('.color-swatch:not([data-bg])').forEach(x => x.classList.remove('selected'));
+      scheduleGenerate();
+    });
+
+    // BG color swatches
+    document.querySelectorAll('.color-swatch[data-bg]').forEach(s => {
+      s.addEventListener('click', () => {
+        document.querySelectorAll('.color-swatch[data-bg]').forEach(x => x.classList.remove('selected'));
+        s.classList.add('selected');
+        state.bgColor = s.dataset.color;
+        document.getElementById('bg-color').value = state.bgColor;
+        scheduleGenerate();
+      });
+    });
+
+    const firstBgSwatch = document.querySelector('.color-swatch:not([data-bg="1"]):not(.color-swatch[data-color="#000000"])');
+    document.querySelector('.color-swatch[data-color="#ffffff"]').addEventListener('click', function() {
+      document.querySelectorAll('.color-swatch[data-bg], .color-swatch[data-color="#ffffff"]').forEach(x => x.classList.remove('selected'));
+      this.classList.add('selected');
+      state.bgColor = '#ffffff';
+      scheduleGenerate();
+    });
+
+    document.getElementById('bg-color').addEventListener('input', e => {
+      state.bgColor = e.target.value;
+      document.querySelectorAll('.color-swatch[data-bg]').forEach(x => x.classList.remove('selected'));
+      scheduleGenerate();
+    });
+
+    // ECC & Margin
+    document.getElementById('ecc').addEventListener('change', e => { state.ecc = e.target.value; scheduleGenerate(); });
+    document.getElementById('margin').addEventListener('input', e => {
+      state.margin = parseInt(e.target.value);
+      document.getElementById('margin-val').textContent = state.margin + 'px';
+      document.getElementById('qr-frame').style.padding = state.margin + 'px';
+      scheduleGenerate();
+    });
+
+    // Logo upload
+    document.getElementById('logo-input').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        state.logoDataUrl = ev.target.result;
+        state.logoFileName = file.name;
+        document.getElementById('logo-area').style.display = 'none';
+        const prev = document.getElementById('logo-preview-area');
+        prev.style.display = 'flex';
+        prev.innerHTML = `<div class="logo-preview"><img src="${state.logoDataUrl}" /><span class="logo-preview-text">${file.name}</span><button class="logo-remove" id="logo-remove-btn" title="Remove">✕</button></div>`;
+        document.getElementById('logo-remove-btn').addEventListener('click', removeLogo);
+        scheduleGenerate();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function removeLogo() {
+      state.logoDataUrl = null;
+      state.logoFileName = null;
+      document.getElementById('logo-area').style.display = 'block';
+      document.getElementById('logo-preview-area').style.display = 'none';
+      document.getElementById('logo-preview-area').innerHTML = '';
+      document.getElementById('logo-input').value = '';
+      scheduleGenerate();
+    }
+
+    // Export buttons
+    document.getElementById('dl-png').addEventListener('click', () => downloadPNG(1));
+    document.getElementById('dl-hq').addEventListener('click', () => downloadPNG(2));
+    document.getElementById('dl-svg').addEventListener('click', downloadSVG);
+    document.getElementById('copy-btn').addEventListener('click', copyToClipboard);
+
+    // Init margin display
+    document.getElementById('qr-frame').style.padding = state.margin + 'px';
+  </script>
+
+  <footer style="position:relative;z-index:1;text-align:center;margin-top:2.5rem;padding-bottom:1.5rem;">
+    <span style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--text3);letter-spacing:0.08em;">
+      developed by
+      <span style="background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:500;letter-spacing:0.12em;">BEST_TEAM</span>
+    </span>
+  </footer>
+</body>
+</html>
