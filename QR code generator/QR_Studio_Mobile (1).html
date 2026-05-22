@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <title>QR Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1c1c28;
+      --surface3: #252535;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.14);
+      --text: #f0f0f8;
+      --text2: #8888aa;
+      --text3: #55556a;
+      --accent: #7c6af7;
+      --accent2: #c084fc;
+      --green: #34d399;
+      --red: #f87171;
+      --card-radius: 20px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bot: env(safe-area-inset-bottom, 0px);
+      --safe-l: env(safe-area-inset-left, 0px);
+      --safe-r: env(safe-area-inset-right, 0px);
+    }
+
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 15% 0%, rgba(124,106,247,0.14) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 90% 90%, rgba(192,132,252,0.10) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 520px;
+      margin: 0 auto;
+      padding:
+        calc(var(--safe-top) + 1rem)
+        calc(var(--safe-r) + 1rem)
+        calc(var(--safe-bot) + 5rem)
+        calc(var(--safe-l) + 1rem);
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .logo { display: flex; align-items: center; gap: 0.55rem; }
+
+    .logo-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-icon svg { width: 19px; height: 19px; fill: white; }
+
+    h1 { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+    h1 span {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    .badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--accent);
+      background: rgba(124,106,247,0.12);
+      border: 1px solid rgba(124,106,247,0.25);
+      padding: 0.25rem 0.55rem;
+      border-radius: 100px;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    /* ── PREVIEW CARD ── */
+    .preview-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 1.1rem;
+      margin-bottom: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .preview-top {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sec-label {
+      font-size: 0.63rem;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text3);
+    }
+
+    .qr-wrap {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    .qr-frame {
+      width: min(100%, 240px);
+      aspect-ratio: 1;
+      background: white;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: box-shadow 0.3s, padding 0.3s;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    .qr-frame.has-qr {
+      box-shadow: 0 0 0 2px rgba(124,106,247,0.35), 0 4px 30px rgba(0,0,0,0.5);
+    }
+
+    #qr-container {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    #qr-container canvas, #qr-container img {
+      max-width: 100% !important;
+      max-height: 100% !important;
+      width: auto !important;
+      height: auto !important;
+      display: block;
+    }
+
+    .empty-state {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 0.45rem;
+      padding: 1rem;
+    }
+    .empty-state svg { width: 44px; height: 44px; stroke: #ccc; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .empty-state p { font-size: 0.72rem; color: #bbb; font-family: 'DM Mono', monospace; text-align: center; line-height: 1.4; }
+
+    .preview-meta {
+      width: 100%;
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--text3);
+    }
+
+    .status { display: flex; align-items: center; gap: 0.35rem; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); flex-shrink: 0; transition: background 0.3s, box-shadow 0.3s; }
+    .dot.on { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+    /* Export row */
+    .export-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.45rem;
+      width: 100%;
+    }
+
+    .exp-btn {
+      padding: 0.65rem 0.25rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.18s ease;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 0.3rem;
+      line-height: 1;
+      touch-action: manipulation;
+      min-height: 52px;
+      justify-content: center;
+    }
+    .exp-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .exp-btn:active:not(:disabled) { transform: scale(0.95); background: var(--surface3); }
+    .exp-btn:hover:not(:disabled) { background: var(--surface3); color: var(--text); border-color: var(--border2); }
+    .exp-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ── SECTION CARD ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 1.1rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .card-label {
+      font-size: 0.63rem;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text3);
+      margin-bottom: 0.8rem;
+    }
+
+    /* ── TABS ── */
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 1rem;
+    }
+
+    .tab {
+      text-align: center;
+      padding: 0.55rem 0.15rem;
+      border-radius: 7px;
+      font-size: 0.67rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--text3);
+      transition: all 0.18s;
+      letter-spacing: 0.01em;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      white-space: nowrap;
+    }
+    .tab.active {
+      background: var(--surface3);
+      color: var(--text);
+      border: 1px solid var(--border2);
+    }
+    .tab:active { transform: scale(0.97); }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ── INPUTS ── */
+    .ig { position: relative; margin-bottom: 0.7rem; }
+    .ig svg {
+      position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%);
+      width: 14px; height: 14px;
+      stroke: var(--text3); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+      pointer-events: none;
+    }
+
+    input[type="text"], input[type="email"], input[type="tel"], input[type="url"] {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      border-radius: 11px;
+      padding: 0.85rem 2.4rem 0.85rem 2.35rem;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      -webkit-appearance: none;
+      /* Prevent iOS zoom on focus - 16px minimum */
+      font-size: max(16px, 0.9rem);
+    }
+    input[type="text"]:focus, input[type="email"]:focus, input[type="tel"]:focus, input[type="url"]:focus {
+      border-color: var(--accent);
+      background: var(--surface3);
+    }
+    input[type="text"].no-icon, input[type="email"].no-icon, input[type="tel"].no-icon, input[type="url"].no-icon {
+      padding-left: 0.85rem;
+    }
+    input::placeholder { color: var(--text3); }
+
+    .cc {
+      position: absolute; right: 0.7rem; top: 50%; transform: translateY(-50%);
+      font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--text3);
+      pointer-events: none;
+    }
+
+    /* Field row — stack on very small screens */
+    .frow { display: flex; gap: 0.5rem; margin-bottom: 0.7rem; flex-wrap: wrap; }
+    .frow .fg { flex: 1; min-width: 120px; }
+    .frow .fg label { display: block; font-size: 0.65rem; color: var(--text2); margin-bottom: 0.28rem; font-weight: 600; letter-spacing: 0.02em; }
+    .frow .fg input[type="text"] { padding: 0.7rem 0.8rem; font-size: max(16px, 0.85rem); }
+
+    /* ── DIVIDER ── */
+    .div { height: 1px; background: var(--border); margin: 0.9rem 0; }
+
+    /* ── OPTION ROW ── */
+    .opt-row { display: flex; align-items: center; justify-content: space-between; gap: 0.65rem; margin-bottom: 0.8rem; flex-wrap: wrap; }
+    .opt-label { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+    .opt-sub { font-size: 0.65rem; color: var(--text2); margin-top: 0.08rem; }
+
+    /* ── COLOR SWATCHES ── */
+    .swatch-row { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+
+    .sw {
+      width: 28px; height: 28px; border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s, border-color 0.15s;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .sw:active { transform: scale(0.92); }
+    .sw:hover { transform: scale(1.12); }
+    .sw.sel { border-color: white; transform: scale(1.08); }
+
+    .cpw { position: relative; width: 28px; height: 28px; }
+    .cpw input[type="color"] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+    .cp-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px dashed var(--border2);
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: var(--text3);
+      pointer-events: none;
+    }
+
+    /* ── SELECT ── */
+    select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.82rem;
+      border-radius: 9px;
+      padding: 0.55rem 0.7rem;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+      appearance: none;
+      min-width: 110px;
+      min-height: 40px;
+    }
+    select:focus { border-color: var(--accent); }
+
+    /* ── SLIDER ── */
+    .slider-wrap { display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 130px; }
+    input[type="range"] {
+      flex: 1; height: 5px; border-radius: 3px;
+      background: var(--surface3); -webkit-appearance: none; appearance: none;
+      outline: none; cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+      background: var(--accent); cursor: pointer; border: 2px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--accent); cursor: pointer; border: 2px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+    .rv { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--text2); min-width: 32px; text-align: right; }
+
+    /* ── LOGO UPLOAD ── */
+    .logo-drop {
+      border: 2px dashed var(--border2);
+      border-radius: 11px;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      display: block;
+      touch-action: manipulation;
+    }
+    .logo-drop:active { background: rgba(124,106,247,0.07); }
+    .logo-drop:hover { border-color: var(--accent); background: rgba(124,106,247,0.05); }
+    .logo-drop svg { width: 22px; height: 22px; stroke: var(--text3); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .logo-drop p { font-size: 0.72rem; color: var(--text2); margin-top: 0.3rem; line-height: 1.5; }
+
+    #logo-input { display: none; }
+
+    .logo-prev {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.55rem 0.7rem;
+      background: var(--surface2); border-radius: 9px;
+    }
+    .logo-prev img { width: 34px; height: 34px; object-fit: contain; border-radius: 5px; }
+    .logo-prev-name { flex: 1; font-size: 0.72rem; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .logo-rm {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(248,113,113,0.15); border: none;
+      color: var(--red); cursor: pointer; font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; flex-shrink: 0;
+      touch-action: manipulation;
+    }
+    .logo-rm:active { background: rgba(248,113,113,0.4); transform: scale(0.9); }
+    .logo-rm:hover { background: rgba(248,113,113,0.3); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: calc(var(--safe-bot) + 1.5rem);
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--surface3);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: 'DM Mono', monospace; font-size: 0.78rem;
+      padding: 0.7rem 1.2rem; border-radius: 100px;
+      opacity: 0; transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none; z-index: 999;
+      display: flex; align-items: center; gap: 0.45rem;
+      white-space: nowrap;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      padding-bottom: 0.5rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text3);
+      letter-spacing: 0.08em;
+    }
+    footer .team {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      font-weight: 500; letter-spacing: 0.12em;
+    }
+
+    /* ── MOBILE BOTTOM SHEET EXPORT ── */
+    /* Only visible on mobile when QR is ready */
+    .mobile-export-strip {
+      display: none;
+    }
+
+    /* ── COLLAPSIBLE SECTIONS (mobile) ── */
+    .collapse-toggle {
+      display: none;
+      width: 100%;
+      background: none;
+      border: none;
+      color: inherit;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 0;
+      align-items: center;
+      justify-content: space-between;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .collapse-toggle .chevron {
+      width: 16px; height: 16px;
+      stroke: var(--text3); fill: none; stroke-width: 2; stroke-linecap: round;
+      transition: transform 0.25s ease;
+      flex-shrink: 0;
+    }
+    .collapse-toggle.open .chevron { transform: rotate(180deg); }
+
+    .collapsible-body {
+      overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── DESKTOP LAYOUT ── */
+    @media (min-width: 700px) {
+      .app {
+        max-width: 960px;
+        padding: 2rem 2rem 4rem;
+      }
+
+      .desktop-grid {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 1.1rem;
+        align-items: start;
+      }
+
+      .preview-col {
+        position: sticky;
+        top: 1.5rem;
+        order: 2;
+      }
+
+      .controls-col { order: 1; }
+
+      .qr-frame { max-width: 100%; width: 100%; }
+
+      .collapse-toggle { display: none !important; }
+      .collapsible-body { max-height: none !important; }
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 699px) {
+      .desktop-grid {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .preview-col { order: 0; }
+      .controls-col { order: 1; }
+
+      /* Collapse card bodies on mobile */
+      .collapse-toggle { display: flex; }
+
+      .collapsible-body {
+        max-height: 0;
+      }
+      .collapsible-body.open {
+        max-height: 1000px;
+      }
+
+      /* Smaller card padding on mobile */
+      .card { padding: 0.9rem; }
+      .preview-card { padding: 0.9rem; }
+
+      /* QR frame a bit bigger on mobile for easy scanning */
+      .qr-frame { width: min(100%, 260px); }
+
+      /* Export strip pinned at bottom on mobile */
+      .mobile-export-strip {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0; right: 0;
+        background: rgba(19,19,26,0.95);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-top: 1px solid var(--border2);
+        padding: 0.75rem 1rem;
+        padding-bottom: calc(var(--safe-bot) + 0.75rem);
+        gap: 0.45rem;
+        z-index: 100;
+        transition: transform 0.3s ease;
+      }
+      .mobile-export-strip.hidden {
+        transform: translateY(100%);
+      }
+      .mobile-export-strip .exp-btn {
+        flex: 1;
+        font-size: 0.62rem;
+        padding: 0.6rem 0.2rem;
+        min-height: 48px;
+      }
+
+      /* Hide the inline export on mobile (shown in strip instead) */
+      .preview-card .export-row { display: none; }
+      .preview-card .sec-label.export-lbl { display: none; }
+
+      /* Adjust toast so it doesn't clash with strip */
+      .toast { bottom: calc(var(--safe-bot) + 5rem); }
+    }
+
+    /* Extra small phones */
+    @media (max-width: 360px) {
+      h1 { font-size: 1.1rem; }
+      .tab { font-size: 0.6rem; padding: 0.5rem 0.1rem; }
+      .frow { flex-direction: column; }
+      .frow .fg { min-width: 100%; }
+    }
+
+    /* ── ANIMATION ── */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card, .preview-card { animation: fadeIn 0.3s ease both; }
+    .card:nth-child(2) { animation-delay: 0.05s; }
+    .card:nth-child(3) { animation-delay: 0.1s; }
+
+    /* Pulse when QR ready */
+    @keyframes qrPulse {
+      0% { box-shadow: 0 0 0 2px rgba(124,106,247,0.35), 0 4px 30px rgba(0,0,0,0.5); }
+      50% { box-shadow: 0 0 0 5px rgba(124,106,247,0.15), 0 4px 30px rgba(0,0,0,0.5); }
+      100% { box-shadow: 0 0 0 2px rgba(124,106,247,0.35), 0 4px 30px rgba(0,0,0,0.5); }
+    }
+    .qr-frame.has-qr { animation: qrPulse 2.5s ease-in-out infinite; }
+
+    /* Scroll hint on mobile */
+    .scroll-hint {
+      display: none;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--text3);
+      text-align: center;
+      padding: 0.4rem 0 0;
+      letter-spacing: 0.06em;
+    }
+    @media (max-width: 699px) { .scroll-hint { display: block; } }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h2v2h-2zM19 15h2v2h-2zM15 19h2v2h-2zM19 19h2v2h-2zM11 3h2v2h-2zM11 7h2v2h-2zM3 11h2v2H3zM7 11h2v2H7zM11 11h2v2h-2zM15 11h2v2h-2z"/></svg>
+      </div>
+      <h1>QR <span>Studio</span></h1>
+    </div>
+    <div class="badge">v2.1</div>
+  </header>
+
+  <div class="desktop-grid">
+
+    <!-- RIGHT: QR Preview -->
+    <div class="preview-col">
+      <div class="preview-card">
+        <div class="preview-top">
+          <div class="sec-label">Live Preview</div>
+          <div class="status">
+            <div class="dot" id="dot"></div>
+            <span id="status-txt" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text3);">Idle</span>
+          </div>
+        </div>
+
+        <div class="qr-wrap">
+          <div class="qr-frame" id="qr-frame">
+            <div id="qr-container">
+              <div class="empty-state">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="19" y="14" width="3" height="3"/><rect x="14" y="19" width="3" height="3"/><rect x="19" y="19" width="3" height="3"/></svg>
+                <p>Type something<br>to generate</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="preview-meta">
+          <span id="size-lbl" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text3);">—</span>
+          <span id="ecc-lbl" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text3);">ECC: H</span>
+        </div>
+
+        <!-- Export (desktop only; mobile sees bottom strip) -->
+        <div class="sec-label export-lbl" style="width:100%;margin-bottom:0.45rem;">Export</div>
+        <div class="export-row">
+          <button class="exp-btn" id="dl-png" disabled>
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PNG
+          </button>
+          <button class="exp-btn" id="dl-hq" disabled>
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>2× HQ
+          </button>
+          <button class="exp-btn" id="dl-svg" disabled>
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG
+          </button>
+          <button class="exp-btn" id="copy-btn" disabled>
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy
+          </button>
+        </div>
+
+        <p class="scroll-hint">↓ scroll to customise</p>
+      </div>
+    </div>
+
+    <!-- LEFT: Controls -->
+    <div class="controls-col">
+
+      <!-- Content Card -->
+      <div class="card">
+        <button class="collapse-toggle open" data-target="content-body">
+          <span class="card-label" style="margin-bottom:0;">Content</span>
+          <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="collapsible-body open" id="content-body">
+          <div style="height:0.8rem;"></div>
+          <div class="tabs">
+            <div class="tab active" data-tab="url">URL</div>
+            <div class="tab" data-tab="text">Text</div>
+            <div class="tab" data-tab="vcard">Card</div>
+            <div class="tab" data-tab="wifi">Wi-Fi</div>
+            <div class="tab" data-tab="email">Email</div>
+          </div>
+
+          <!-- URL -->
+          <div class="tab-pane active" id="pane-url">
+            <div class="ig">
+              <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              <input type="url" id="input-url" placeholder="https://example.com" inputmode="url" autocomplete="off" autocorrect="off" spellcheck="false" />
+              <span class="cc" id="cc-url">0</span>
+            </div>
+          </div>
+
+          <!-- Text -->
+          <div class="tab-pane" id="pane-text">
+            <div class="ig">
+              <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+              <input type="text" id="input-text" placeholder="Enter any text…" autocorrect="off" spellcheck="false" />
+              <span class="cc" id="cc-text">0</span>
+            </div>
+          </div>
+
+          <!-- vCard -->
+          <div class="tab-pane" id="pane-vcard">
+            <div class="frow">
+              <div class="fg"><label>First Name</label><input type="text" id="vc-first" placeholder="Jane" autocomplete="given-name" /></div>
+              <div class="fg"><label>Last Name</label><input type="text" id="vc-last" placeholder="Doe" autocomplete="family-name" /></div>
+            </div>
+            <div class="frow">
+              <div class="fg"><label>Phone</label><input type="tel" id="vc-phone" placeholder="+1 555 0100" inputmode="tel" autocomplete="tel" /></div>
+              <div class="fg"><label>Email</label><input type="email" id="vc-email" placeholder="jane@acme.com" inputmode="email" autocomplete="email" /></div>
+            </div>
+            <div class="frow">
+              <div class="fg"><label>Company</label><input type="text" id="vc-company" placeholder="Acme Inc." autocomplete="organization" /></div>
+              <div class="fg"><label>Website</label><input type="url" id="vc-web" placeholder="https://acme.com" inputmode="url" /></div>
+            </div>
+          </div>
+
+          <!-- Wi-Fi -->
+          <div class="tab-pane" id="pane-wifi">
+            <div class="frow">
+              <div class="fg"><label>Network Name (SSID)</label><input type="text" id="wf-ssid" placeholder="My Network" autocomplete="off" autocorrect="off" spellcheck="false" /></div>
+              <div class="fg"><label>Password</label><input type="text" id="wf-pass" placeholder="••••••••" autocomplete="off" autocorrect="off" /></div>
+            </div>
+            <div class="opt-row" style="margin-bottom:0;">
+              <div class="opt-label" style="font-size:0.8rem;">Encryption</div>
+              <select id="wf-enc">
+                <option value="WPA">WPA/WPA2</option>
+                <option value="WEP">WEP</option>
+                <option value="">None</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="tab-pane" id="pane-email">
+            <div class="frow">
+              <div class="fg"><label>To</label><input type="email" id="em-to" placeholder="recipient@mail.com" inputmode="email" autocomplete="off" /></div>
+              <div class="fg"><label>Subject</label><input type="text" id="em-sub" placeholder="Hello!" /></div>
+            </div>
+            <div class="ig" style="margin-bottom:0;">
+              <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              <input type="text" id="em-body" placeholder="Message body…" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customise Card -->
+      <div class="card">
+        <button class="collapse-toggle open" data-target="customise-body">
+          <span class="card-label" style="margin-bottom:0;">Customise</span>
+          <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="collapsible-body open" id="customise-body">
+          <div style="height:0.8rem;"></div>
+
+          <div class="opt-row" style="align-items:flex-start;">
+            <div style="flex-shrink:0;padding-top:0.1rem;"><div class="opt-label">Foreground</div></div>
+            <div class="swatch-row" id="fg-swatches">
+              <div class="sw sel" data-color="#000000" style="background:#000000;"></div>
+              <div class="sw" data-color="#1e40af" style="background:#1e40af;"></div>
+              <div class="sw" data-color="#7c3aed" style="background:#7c3aed;"></div>
+              <div class="sw" data-color="#0f766e" style="background:#0f766e;"></div>
+              <div class="sw" data-color="#b91c1c" style="background:#b91c1c;"></div>
+              <div class="sw" data-color="#92400e" style="background:#92400e;"></div>
+              <div class="cpw" title="Custom colour">
+                <div class="cp-icon">＋</div>
+                <input type="color" id="fg-color" value="#000000" />
+              </div>
+            </div>
+          </div>
+
+          <div class="opt-row" style="align-items:flex-start;">
+            <div style="flex-shrink:0;padding-top:0.1rem;"><div class="opt-label">Background</div></div>
+            <div class="swatch-row" id="bg-swatches">
+              <div class="sw sel" data-color="#ffffff" style="background:#ffffff;border:1.5px solid #ddd;"></div>
+              <div class="sw" data-color="#f0f9ff" style="background:#f0f9ff;border:1.5px solid #ddd;"></div>
+              <div class="sw" data-color="#faf5ff" style="background:#faf5ff;border:1.5px solid #ddd;"></div>
+              <div class="sw" data-color="#f0fdf4" style="background:#f0fdf4;border:1.5px solid #ddd;"></div>
+              <div class="sw" data-color="#fff7ed" style="background:#fff7ed;border:1.5px solid #ddd;"></div>
+              <div class="cpw" title="Custom colour">
+                <div class="cp-icon">＋</div>
+                <input type="color" id="bg-color" value="#ffffff" />
+              </div>
+            </div>
+          </div>
+
+          <div class="div"></div>
+
+          <div class="opt-row">
+            <div><div class="opt-label">Error Correction</div><div class="opt-sub">Higher = more redundancy</div></div>
+            <select id="ecc">
+              <option value="H">High (H)</option>
+              <option value="Q">Mid (Q)</option>
+              <option value="M">Low (M)</option>
+              <option value="L">Min (L)</option>
+            </select>
+          </div>
+
+          <div class="opt-row">
+            <div><div class="opt-label">Margin</div><div class="opt-sub">Quiet zone size</div></div>
+            <div class="slider-wrap">
+              <input type="range" id="margin" min="0" max="40" value="16" step="4" />
+              <span class="rv" id="margin-val">16px</span>
+            </div>
+          </div>
+
+          <div class="div"></div>
+
+          <div class="card-label" style="margin-bottom:0.55rem;">Logo Overlay</div>
+          <div id="logo-area">
+            <label for="logo-input" class="logo-drop">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <p>Tap to upload logo<br><span style="color:var(--text3);font-size:0.65rem;">PNG · SVG · JPG · WebP</span></p>
+            </label>
+            <input type="file" id="logo-input" accept="image/png,image/svg+xml,image/jpeg,image/webp" />
+          </div>
+          <div id="logo-preview-area" style="display:none;"></div>
+        </div>
+      </div>
+
+    </div><!-- /controls-col -->
+  </div><!-- /desktop-grid -->
+
+  <footer>
+    developed by <span class="team">BEST_TEAM</span>
+  </footer>
+
+</div><!-- /app -->
+
+<!-- Mobile export strip (pinned bottom) -->
+<div class="mobile-export-strip hidden" id="mobile-strip">
+  <button class="exp-btn" id="m-dl-png" disabled>
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PNG
+  </button>
+  <button class="exp-btn" id="m-dl-hq" disabled>
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>2× HQ
+  </button>
+  <button class="exp-btn" id="m-dl-svg" disabled>
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG
+  </button>
+  <button class="exp-btn" id="m-copy-btn" disabled>
+    <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy
+  </button>
+</div>
+
+<div class="toast" id="toast">✓ <span id="toast-msg">Done</span></div>
+
+<script>
+  const state = {
+    tab: 'url',
+    fg: '#000000',
+    bg: '#ffffff',
+    ecc: 'H',
+    margin: 16,
+    logo: null,
+  };
+
+  const eccMap = {
+    H: QRCode.CorrectLevel.H,
+    Q: QRCode.CorrectLevel.Q,
+    M: QRCode.CorrectLevel.M,
+    L: QRCode.CorrectLevel.L
+  };
+
+  function getContent() {
+    const t = state.tab;
+    const v = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+
+    if (t === 'url') return v('input-url');
+    if (t === 'text') return v('input-text');
+    if (t === 'vcard') {
+      const fn = v('vc-first'), ln = v('vc-last'), ph = v('vc-phone'), em = v('vc-email'), co = v('vc-company'), wb = v('vc-web');
+      if (!fn && !ln && !ph && !em) return '';
+      return `BEGIN:VCARD\nVERSION:3.0\nN:${ln};${fn};;;\nFN:${fn} ${ln}\n${ph?'TEL:'+ph+'\n':''}${em?'EMAIL:'+em+'\n':''}${co?'ORG:'+co+'\n':''}${wb?'URL:'+wb+'\n':''}END:VCARD`;
+    }
+    if (t === 'wifi') {
+      const s = v('wf-ssid'), p = v('wf-pass'), e = document.getElementById('wf-enc').value;
+      return s ? `WIFI:T:${e};S:${s};P:${p};;` : '';
+    }
+    if (t === 'email') {
+      const to = v('em-to'), sub = v('em-sub'), body = v('em-body');
+      return to ? `mailto:${to}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}` : '';
+    }
+    return '';
+  }
+
+  let timer = null;
+  function schedule() { clearTimeout(timer); timer = setTimeout(render, 160); }
+
+  function render() {
+    const content = getContent();
+    const container = document.getElementById('qr-container');
+    const frame = document.getElementById('qr-frame');
+    const dot = document.getElementById('dot');
+    const stxt = document.getElementById('status-txt');
+    const slbl = document.getElementById('size-lbl');
+    const strip = document.getElementById('mobile-strip');
+
+    container.innerHTML = '';
+
+    if (!content) {
+      container.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="19" y="14" width="3" height="3"/><rect x="14" y="19" width="3" height="3"/><rect x="19" y="19" width="3" height="3"/></svg><p>Type something<br>to generate</p></div>`;
+      frame.style.background = 'white';
+      frame.style.padding = '';
+      frame.classList.remove('has-qr');
+      dot.className = 'dot';
+      stxt.textContent = 'Idle';
+      slbl.textContent = '—';
+      setEnabled(false);
+      strip.classList.add('hidden');
+      return;
+    }
+
+    const frameW = frame.offsetWidth || 240;
+    const size = Math.min(Math.round(frameW * 0.9), 320);
+
+    new QRCode(container, {
+      text: content,
+      width: size, height: size,
+      colorDark: state.fg,
+      colorLight: state.bg,
+      correctLevel: eccMap[state.ecc]
+    });
+
+    frame.style.background = state.bg;
+    frame.style.padding = state.margin + 'px';
+    frame.classList.add('has-qr');
+
+    setTimeout(() => {
+      const canvas = container.querySelector('canvas');
+      if (canvas) {
+        if (state.logo) overlayLogo(canvas);
+        dot.className = 'dot on';
+        stxt.textContent = 'Ready';
+        slbl.textContent = `${size}×${size}`;
+        setEnabled(true);
+        strip.classList.remove('hidden');
+      }
+    }, 60);
+  }
+
+  function overlayLogo(canvas) {
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => {
+      const ls = canvas.width * 0.22;
+      const x = (canvas.width - ls) / 2, y = (canvas.height - ls) / 2;
+      const pad = ls * 0.12;
+      ctx.fillStyle = state.bg;
+      ctx.fillRect(x - pad, y - pad, ls + pad * 2, ls + pad * 2);
+      ctx.drawImage(img, x, y, ls, ls);
+    };
+    img.src = state.logo;
+  }
+
+  function setEnabled(on) {
+    ['dl-png','dl-hq','dl-svg','copy-btn','m-dl-png','m-dl-hq','m-dl-svg','m-copy-btn'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = !on;
+    });
+  }
+
+  function dlPNG(scale) {
+    const c = document.getElementById('qr-container').querySelector('canvas');
+    if (!c) return;
+    if (scale === 1) { trigger(c.toDataURL(), 'qrcode.png'); showToast('PNG saved ↓'); return; }
+    const oc = document.createElement('canvas');
+    oc.width = c.width * scale; oc.height = c.height * scale;
+    const ctx = oc.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(c, 0, 0, oc.width, oc.height);
+    trigger(oc.toDataURL(), `qrcode_${scale}x.png`);
+    showToast(`${scale}× PNG saved ↓`);
+  }
+
+  function dlSVG() {
+    const c = document.getElementById('qr-container').querySelector('canvas');
+    if (!c) return;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${c.width}" height="${c.height}" viewBox="0 0 ${c.width} ${c.height}"><image width="${c.width}" height="${c.height}" href="${c.toDataURL()}"/></svg>`;
+    const url = URL.createObjectURL(new Blob([svg], {type:'image/svg+xml'}));
+    trigger(url, 'qrcode.svg');
+    showToast('SVG saved ↓');
+  }
+
+  async function copyImg() {
+    const c = document.getElementById('qr-container').querySelector('canvas');
+    if (!c) return;
+    try {
+      c.toBlob(async b => {
+        await navigator.clipboard.write([new ClipboardItem({'image/png': b})]);
+        showToast('Copied to clipboard!');
+      });
+    } catch { showToast('Copy failed — use download'); }
+  }
+
+  function trigger(href, name) {
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = name;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => document.body.removeChild(a), 200);
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ── TABS ──
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      state.tab = tab.dataset.tab;
+      document.getElementById('pane-' + state.tab).classList.add('active');
+      schedule();
+    });
+  });
+
+  // ── TEXT INPUTS ──
+  ['input-url','input-text','vc-first','vc-last','vc-phone','vc-email','vc-company','vc-web','wf-ssid','wf-pass','em-to','em-sub','em-body'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      if (id === 'input-url') document.getElementById('cc-url').textContent = el.value.length;
+      if (id === 'input-text') document.getElementById('cc-text').textContent = el.value.length;
+      schedule();
+    });
+  });
+  document.getElementById('wf-enc').addEventListener('change', schedule);
+
+  // ── FG SWATCHES ──
+  document.querySelectorAll('#fg-swatches .sw').forEach(s => {
+    s.addEventListener('click', () => {
+      document.querySelectorAll('#fg-swatches .sw').forEach(x => x.classList.remove('sel'));
+      s.classList.add('sel');
+      state.fg = s.dataset.color;
+      document.getElementById('fg-color').value = state.fg;
+      schedule();
+    });
+  });
+  document.getElementById('fg-color').addEventListener('input', e => {
+    state.fg = e.target.value;
+    document.querySelectorAll('#fg-swatches .sw').forEach(x => x.classList.remove('sel'));
+    schedule();
+  });
+
+  // ── BG SWATCHES ──
+  document.querySelectorAll('#bg-swatches .sw').forEach(s => {
+    s.addEventListener('click', () => {
+      document.querySelectorAll('#bg-swatches .sw').forEach(x => x.classList.remove('sel'));
+      s.classList.add('sel');
+      state.bg = s.dataset.color;
+      document.getElementById('bg-color').value = state.bg;
+      schedule();
+    });
+  });
+  document.getElementById('bg-color').addEventListener('input', e => {
+    state.bg = e.target.value;
+    document.querySelectorAll('#bg-swatches .sw').forEach(x => x.classList.remove('sel'));
+    schedule();
+  });
+
+  // ── ECC & MARGIN ──
+  document.getElementById('ecc').addEventListener('change', e => {
+    state.ecc = e.target.value;
+    document.getElementById('ecc-lbl').textContent = `ECC: ${e.target.value}`;
+    schedule();
+  });
+  document.getElementById('margin').addEventListener('input', e => {
+    state.margin = +e.target.value;
+    document.getElementById('margin-val').textContent = state.margin + 'px';
+    schedule();
+  });
+
+  // ── LOGO ──
+  document.getElementById('logo-input').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      state.logo = ev.target.result;
+      document.getElementById('logo-area').style.display = 'none';
+      const pa = document.getElementById('logo-preview-area');
+      pa.style.display = 'block';
+      pa.innerHTML = `<div class="logo-prev"><img src="${state.logo}" alt="Logo"/><span class="logo-prev-name">${file.name}</span><button class="logo-rm" id="logo-rm" aria-label="Remove logo">✕</button></div>`;
+      document.getElementById('logo-rm').onclick = () => {
+        state.logo = null;
+        document.getElementById('logo-area').style.display = 'block';
+        pa.style.display = 'none'; pa.innerHTML = '';
+        document.getElementById('logo-input').value = '';
+        schedule();
+      };
+      schedule();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // ── EXPORTS (desktop) ──
+  document.getElementById('dl-png').onclick = () => dlPNG(1);
+  document.getElementById('dl-hq').onclick = () => dlPNG(2);
+  document.getElementById('dl-svg').onclick = dlSVG;
+  document.getElementById('copy-btn').onclick = copyImg;
+
+  // ── EXPORTS (mobile strip) ──
+  document.getElementById('m-dl-png').onclick = () => dlPNG(1);
+  document.getElementById('m-dl-hq').onclick = () => dlPNG(2);
+  document.getElementById('m-dl-svg').onclick = dlSVG;
+  document.getElementById('m-copy-btn').onclick = copyImg;
+
+  // ── COLLAPSIBLE SECTIONS ──
+  document.querySelectorAll('.collapse-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      if (!target) return;
+      const isOpen = target.classList.contains('open');
+      target.classList.toggle('open', !isOpen);
+      btn.classList.toggle('open', !isOpen);
+    });
+  });
+
+  // touch-action: manipulation in CSS handles double-tap zoom prevention without breaking clicks
+</script>
+</body>
+</html>
