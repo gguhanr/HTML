@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Cosmic Typer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Exo+2:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #050810;
+            --surface: rgba(255,255,255,0.03);
+            --surface2: rgba(255,255,255,0.06);
+            --border: rgba(100,200,255,0.12);
+            --border-glow: rgba(100,200,255,0.35);
+            --primary: #38bdf8;
+            --primary-dim: rgba(56,189,248,0.15);
+            --green: #4ade80;
+            --red: #f87171;
+            --muted: #4a5568;
+            --text: #c8d6e5;
+            --text-dim: #3d4f63;
+            --glow: 0 0 20px rgba(56,189,248,0.4), 0 0 60px rgba(56,189,248,0.15);
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px;
+        }
+
+        /* ---- STARFIELD ---- */
+        #starfield {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            background: #fff;
+            animation: twinkle var(--dur, 3s) ease-in-out infinite;
+            animation-delay: var(--delay, 0s);
+            opacity: 0;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: var(--max-opacity, 0.6); transform: scale(1); }
+        }
+        .nebula {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.06;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ---- LAYOUT ---- */
+        #app {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 860px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(12px, 3vw, 24px);
+            padding-bottom: 32px;
+        }
+
+        /* ---- HEADER ---- */
+        header {
+            text-align: center;
+            padding-top: clamp(8px, 3vw, 20px);
+        }
+        .logo {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(1.6rem, 6vw, 3.2rem);
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            color: var(--primary);
+            text-shadow: var(--glow);
+            line-height: 1;
+        }
+        .logo span {
+            color: #fff;
+            opacity: 0.55;
+        }
+        .tagline {
+            font-size: clamp(0.65rem, 2vw, 0.82rem);
+            color: var(--muted);
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+
+        /* ---- PANEL ---- */
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            backdrop-filter: blur(12px);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .panel:hover {
+            border-color: var(--border-glow);
+            box-shadow: 0 0 20px rgba(56,189,248,0.07);
+        }
+
+        /* ---- OPTIONS BAR ---- */
+        #options-bar {
+            width: 100%;
+            padding: clamp(10px, 2.5vw, 16px) clamp(12px, 3vw, 24px);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 10px 20px;
+        }
+        .opt-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .opt-label {
+            font-size: 0.68rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+        .sep { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+        @media (max-width: 480px) { .sep { display: none; } }
+
+        .opt-btn {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(0.7rem, 2.2vw, 0.82rem);
+            background: none;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            padding: 4px 10px;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .opt-btn:hover { color: var(--text); border-color: var(--border); }
+        .opt-btn.active {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: var(--primary-dim);
+            box-shadow: 0 0 10px rgba(56,189,248,0.2);
+        }
+
+        /* ---- STATS ---- */
+        #stats {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: clamp(6px, 1.5vw, 12px);
+        }
+        @media (max-width: 420px) {
+            #stats { grid-template-columns: repeat(2, 1fr); }
+        }
+        .stat-card {
+            padding: clamp(10px, 2.5vw, 18px) 8px;
+            border-radius: 12px;
+            text-align: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .stat-card.active-stat::before { opacity: 1; }
+
+        .stat-val {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(1.4rem, 5vw, 2.2rem);
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+            transition: color 0.3s;
+        }
+        .stat-card.active-stat .stat-val { color: var(--primary); }
+        #timer-card .stat-val { color: var(--primary); }
+        .stat-lbl {
+            font-size: clamp(0.55rem, 1.5vw, 0.65rem);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* ---- TIMER RING (wraps timer stat-val) ---- */
+        .timer-ring-wrap {
+            position: relative;
+            display: inline-block;
+        }
+        #timer-ring {
+            position: absolute;
+            inset: -6px;
+            width: calc(100% + 12px);
+            height: calc(100% + 12px);
+            pointer-events: none;
+        }
+
+        /* ---- TYPING AREA ---- */
+        #typing-area {
+            width: 100%;
+            padding: clamp(16px, 3vw, 28px);
+            border-radius: 14px;
+            position: relative;
+            cursor: text;
+            min-height: clamp(120px, 22vw, 180px);
+            overflow: hidden;
+            user-select: none;
+        }
+        #typing-area.focused { border-color: rgba(56,189,248,0.3); }
+
+        /* Blur overlay when not started */
+        #blur-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(5,8,16,0.65);
+            backdrop-filter: blur(4px);
+            border-radius: 14px;
+            z-index: 3;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        #blur-overlay.hidden { opacity: 0; pointer-events: none; }
+        .overlay-hint {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(0.7rem, 2.5vw, 0.9rem);
+            color: var(--primary);
+            letter-spacing: 0.15em;
+            text-align: center;
+            opacity: 0.8;
+        }
+        .overlay-hint small {
+            display: block;
+            font-size: 0.7em;
+            color: var(--muted);
+            margin-top: 6px;
+            letter-spacing: 0.1em;
+        }
+
+        #text-display {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(0.95rem, 2.8vw, 1.25rem);
+            line-height: clamp(1.9rem, 4.5vw, 2.6rem);
+            letter-spacing: 0.03em;
+            color: var(--text-dim);
+            position: relative;
+            transition: transform 0.15s ease;
+            word-break: break-word;
+        }
+        #text-display span {
+            position: relative;
+            display: inline;
+            transition: color 0.12s;
+        }
+        #text-display span.correct { color: var(--green); }
+        #text-display span.incorrect {
+            color: var(--red);
+            text-decoration: underline;
+            text-decoration-color: var(--red);
+        }
+        #text-display span.caret::after {
+            content: '';
+            position: absolute;
+            right: -2px;
+            top: 2px;
+            width: 2px;
+            height: clamp(1rem, 3vw, 1.4rem);
+            background: var(--primary);
+            border-radius: 2px;
+            box-shadow: 0 0 8px var(--primary);
+            animation: blink 1s steps(1) infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* hidden input trick */
+        #text-input {
+            position: absolute;
+            opacity: 0;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            cursor: text;
+            font-size: 16px; /* prevent iOS zoom */
+        }
+
+        /* ---- PROGRESS BAR ---- */
+        #progress-bar-wrap {
+            width: 100%;
+            height: 3px;
+            background: var(--surface2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        #progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), #60efff);
+            border-radius: 2px;
+            transition: width 0.5s linear;
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        /* ---- CONTROLS ---- */
+        #controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(0.7rem, 2vw, 0.82rem);
+            letter-spacing: 0.1em;
+            padding: clamp(8px, 2vw, 12px) clamp(16px, 4vw, 28px);
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+            white-space: nowrap;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #050810;
+            font-weight: 700;
+        }
+        .btn-primary:hover { background: #7dd3fc; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(56,189,248,0.4); }
+        .btn-primary:active { transform: translateY(0); }
+        .btn-ghost {
+            background: var(--surface2);
+            color: var(--muted);
+            border: 1px solid var(--border);
+        }
+        .btn-ghost:hover { color: var(--text); border-color: var(--border-glow); }
+
+        /* ---- KEYBOARD HINT ---- */
+        #kb-hint {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            letter-spacing: 0.12em;
+            text-align: center;
+        }
+        kbd {
+            font-family: 'Space Mono', monospace;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-size: 0.7rem;
+            color: var(--primary);
+        }
+
+        /* ---- MOBILE INPUT BUTTON ---- */
+        #mobile-type-btn {
+            display: none;
+            width: 100%;
+        }
+        @media (pointer: coarse) {
+            #mobile-type-btn { display: block; }
+            #kb-hint { display: none; }
+        }
+
+        /* ---- RESULTS MODAL ---- */
+        #modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        #modal-backdrop.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        #modal {
+            background: #080d18;
+            border: 1px solid var(--border-glow);
+            border-radius: 18px;
+            padding: clamp(20px, 5vw, 40px);
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(56,189,248,0.15);
+            transform: scale(0.92) translateY(16px);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #modal-backdrop.show #modal {
+            transform: scale(1) translateY(0);
+        }
+        .modal-title {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(1.2rem, 5vw, 1.8rem);
+            font-weight: 700;
+            color: var(--primary);
+            text-shadow: var(--glow);
+            margin-bottom: 6px;
+        }
+        .modal-sub {
+            font-size: 0.75rem;
+            color: var(--muted);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: clamp(16px, 4vw, 28px);
+        }
+        .modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: clamp(8px, 2vw, 14px);
+            margin-bottom: clamp(16px, 4vw, 24px);
+        }
+        .modal-stat {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: clamp(12px, 3vw, 18px);
+            text-align: left;
+        }
+        .modal-stat-val {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(1.5rem, 6vw, 2.4rem);
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+        }
+        .modal-stat.highlight .modal-stat-val { color: var(--primary); }
+        .modal-stat-lbl {
+            font-size: clamp(0.55rem, 1.8vw, 0.65rem);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* Rating bar */
+        .rating-bar-wrap {
+            margin: 0 0 clamp(14px, 3vw, 22px);
+            text-align: left;
+        }
+        .rating-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--muted);
+            margin-bottom: 6px;
+            letter-spacing: 0.1em;
+        }
+        .rating-bar-track {
+            height: 6px;
+            background: var(--surface2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .rating-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--primary), #60efff);
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 0%;
+        }
+        .rating-text {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--primary);
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        /* ---- RESPONSIVE TWEAKS ---- */
+        @media (max-width: 360px) {
+            body { padding: 10px; }
+            .logo { letter-spacing: 0.1em; }
+        }
+
+        /* Prevent pull-to-refresh on mobile during test */
+        body.test-running { overscroll-behavior: none; }
+    </style>
+</head>
+<body>
+    <!-- Starfield background -->
+    <div id="starfield"></div>
+    <div class="nebula" style="width:500px;height:500px;background:#1d4ed8;top:-150px;left:-100px;"></div>
+    <div class="nebula" style="width:400px;height:400px;background:#7c3aed;bottom:-100px;right:-80px;"></div>
+
+    <div id="app">
+        <header>
+            <div class="logo">COSMIC<span>/</span>TYPER</div>
+            <p class="tagline">How fast can you traverse the word-verse?</p>
+        </header>
+
+        <!-- Options Bar -->
+        <div id="options-bar" class="panel">
+            <div class="opt-group">
+                <span class="opt-label">Time</span>
+                <button data-time="15" class="opt-btn">15s</button>
+                <button data-time="30" class="opt-btn active">30s</button>
+                <button data-time="60" class="opt-btn">60s</button>
+                <button data-time="120" class="opt-btn">120s</button>
+            </div>
+            <div class="sep"></div>
+            <div class="opt-group">
+                <span class="opt-label">Mode</span>
+                <button data-mode="words" class="opt-btn active">Words</button>
+                <button data-mode="sentences" class="opt-btn">Sentences</button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div id="stats">
+            <div class="stat-card" id="timer-card">
+                <div class="stat-val" id="timer">30</div>
+                <div class="stat-lbl">Seconds</div>
+            </div>
+            <div class="stat-card" id="wpm-card">
+                <div class="stat-val" id="wpm">0</div>
+                <div class="stat-lbl">WPM</div>
+            </div>
+            <div class="stat-card" id="cpm-card">
+                <div class="stat-val" id="cpm">0</div>
+                <div class="stat-lbl">CPM</div>
+            </div>
+            <div class="stat-card" id="acc-card">
+                <div class="stat-val" id="accuracy">100</div>
+                <div class="stat-lbl">% Accuracy</div>
+            </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div id="progress-bar-wrap">
+            <div id="progress-bar"></div>
+        </div>
+
+        <!-- Typing Area -->
+        <div id="typing-area" class="panel">
+            <div id="blur-overlay">
+                <div class="overlay-hint">
+                    Start typing to begin
+                    <small>or tap the button below on mobile</small>
+                </div>
+            </div>
+            <div id="text-display"></div>
+            <input type="text" id="text-input" autocomplete="off" autocorrect="off"
+                   autocapitalize="off" spellcheck="false" inputmode="text">
+        </div>
+
+        <!-- Mobile tap-to-type button -->
+        <button id="mobile-type-btn" class="btn btn-ghost" onclick="document.getElementById('text-input').focus()">
+            ⌨ Tap to Type
+        </button>
+
+        <!-- Controls -->
+        <div id="controls">
+            <button id="restart-btn" class="btn btn-primary">↺ Restart Test</button>
+        </div>
+
+        <div id="kb-hint">Press <kbd>Tab</kbd> + <kbd>Enter</kbd> to restart anytime</div>
+    </div>
+
+    <!-- Results Modal -->
+    <div id="modal-backdrop">
+        <div id="modal">
+            <div class="modal-title">Test Complete</div>
+            <div class="modal-sub">Your cosmic speed report</div>
+            <div class="modal-grid">
+                <div class="modal-stat highlight">
+                    <div class="modal-stat-val" id="r-wpm">0</div>
+                    <div class="modal-stat-lbl">Words / Min</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-val" id="r-acc">0%</div>
+                    <div class="modal-stat-lbl">Accuracy</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-val" id="r-cpm">0</div>
+                    <div class="modal-stat-lbl">Chars / Min</div>
+                </div>
+                <div class="modal-stat">
+                    <div class="modal-stat-val" id="r-mistakes">0</div>
+                    <div class="modal-stat-lbl">Mistakes</div>
+                </div>
+            </div>
+
+            <!-- Speed rating bar -->
+            <div class="rating-bar-wrap">
+                <div class="rating-bar-label">
+                    <span>Speed Rating</span>
+                    <span id="r-rating-label">—</span>
+                </div>
+                <div class="rating-bar-track">
+                    <div class="rating-bar-fill" id="r-rating-bar"></div>
+                </div>
+                <div class="rating-text" id="r-rating-text"></div>
+            </div>
+
+            <button id="modal-retry-btn" class="btn btn-primary" style="width:100%">↺ Try Again</button>
+        </div>
+    </div>
+
+    <script>
+    (() => {
+        // ---------- STARFIELD ----------
+        const sf = document.getElementById('starfield');
+        for (let i = 0; i < 120; i++) {
+            const s = document.createElement('div');
+            s.className = 'star';
+            const size = Math.random() * 2.2 + 0.4;
+            s.style.cssText = `
+                width:${size}px; height:${size}px;
+                left:${Math.random()*100}%; top:${Math.random()*100}%;
+                --dur:${(Math.random()*4+2).toFixed(1)}s;
+                --delay:${(Math.random()*5).toFixed(1)}s;
+                --max-opacity:${(Math.random()*0.5+0.2).toFixed(2)};
+            `;
+            sf.appendChild(s);
+        }
+
+        // ---------- DOM ----------
+        const textDisplay  = document.getElementById('text-display');
+        const textInput    = document.getElementById('text-input');
+        const timerEl      = document.getElementById('timer');
+        const wpmEl        = document.getElementById('wpm');
+        const cpmEl        = document.getElementById('cpm');
+        const accuracyEl   = document.getElementById('accuracy');
+        const progressBar  = document.getElementById('progress-bar');
+        const restartBtn   = document.getElementById('restart-btn');
+        const modalRetry   = document.getElementById('modal-retry-btn');
+        const optionsBar   = document.getElementById('options-bar');
+        const modalBd      = document.getElementById('modal-backdrop');
+        const typingArea   = document.getElementById('typing-area');
+        const blurOverlay  = document.getElementById('blur-overlay');
+
+        // ---------- STATE ----------
+        let testDuration  = 30;
+        let testMode      = 'words';
+        let timerInterval = null;
+        let timeRemaining = 30;
+        let testInProgress = false;
+        let currentIndex  = 0;
+        let totalTyped    = 0;
+        let correctChars  = 0;
+        let incorrectChars= 0;
+        let textToType    = '';
+
+        // ---------- WORD BANKS ----------
+        const wordBank = [
+            'the','be','to','of','and','a','in','that','have','it','for','not','on','with',
+            'he','as','you','do','at','this','but','his','by','from','they','we','say','her',
+            'she','or','an','will','my','one','all','would','there','their','what','so','up',
+            'out','if','about','who','get','which','go','me','when','make','can','like','time',
+            'no','just','him','know','take','person','into','year','your','good','some','could',
+            'them','see','other','than','then','now','look','only','come','its','over','think',
+            'also','back','after','use','two','how','our','work','first','well','way','even',
+            'new','want','because','any','these','give','day','most','us','code','develop',
+            'system','galaxy','orbit','planet','star','nebula','cosmos','future','laser',
+            'robot','android','cyborg','network','interface','algorithm','data','matrix',
+            'signal','pulse','vector','frame','module','deploy','stream','kernel','cache',
+            'node','link','route','speed','light','dark','void','warp','beam','craft'
+        ];
+        const sentenceBank = [
+            "The quick brown fox jumps over the lazy dog.",
+            "Cosmic dust drifted through the silent void of space.",
+            "A journey of a thousand miles begins with a single step.",
+            "Technology is a useful servant but a dangerous master.",
+            "Artificial intelligence will reshape our world in the coming decades.",
+            "Sunlight streamed through the viewport of the orbiting space station.",
+            "He who controls the spice controls the universe.",
+            "The universe is under no obligation to make sense to you.",
+            "Space is big, really big — you just would not believe how vastly huge it is.",
+            "Stars are not just lights in the sky, they are the engines of creation.",
+            "Every atom in your body was forged inside a dying star billions of years ago.",
+            "The fastest way to travel between stars is to become one."
+        ];
+
+        // ---------- EVENT LISTENERS ----------
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') { e.preventDefault(); return; }
+            if (!modalBd.classList.contains('show')) textInput.focus();
+        });
+        textInput.addEventListener('keydown', handleKeyPress);
+        typingArea.addEventListener('click', () => textInput.focus());
+        textInput.addEventListener('focus', () => typingArea.classList.add('focused'));
+        textInput.addEventListener('blur',  () => typingArea.classList.remove('focused'));
+        restartBtn.addEventListener('click', resetTest);
+        modalRetry.addEventListener('click', () => {
+            modalBd.classList.remove('show');
+            setTimeout(resetTest, 200);
+        });
+
+        // Tab+Enter shortcut
+        let tabHeld = false;
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') tabHeld = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'Tab') tabHeld = false;
+            if (e.key === 'Enter' && tabHeld) resetTest();
+        });
+
+        optionsBar.addEventListener('click', (e) => {
+            if (testInProgress) return;
+            const t = e.target;
+            if (t.dataset.time) {
+                testDuration = parseInt(t.dataset.time);
+                document.querySelectorAll('[data-time]').forEach(b => b.classList.remove('active'));
+                t.classList.add('active');
+                resetTest();
+            }
+            if (t.dataset.mode) {
+                testMode = t.dataset.mode;
+                document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+                t.classList.add('active');
+                resetTest();
+            }
+        });
+
+        // Mobile: handle actual input (for virtual keyboards)
+        textInput.addEventListener('input', handleMobileInput);
+        let lastInputValue = '';
+
+        function handleMobileInput(e) {
+            // Mobile keyboards fire 'input' not reliable 'keydown'
+            const val = textInput.value;
+            if (val.length > lastInputValue.length) {
+                // Characters added
+                const added = val.slice(lastInputValue.length);
+                for (const ch of added) processChar(ch);
+            } else if (val.length < lastInputValue.length) {
+                // Backspace
+                processBackspace();
+            }
+            lastInputValue = val;
+            // Keep input value manageable
+            if (textInput.value.length > 50) textInput.value = '';
+        }
+
+        // ---------- CORE FUNCTIONS ----------
+        function generateText() {
+            let arr;
+            if (testMode === 'words') {
+                const shuffled = [...wordBank].sort(() => Math.random() - 0.5);
+                arr = Array.from({length: 120}, () => wordBank[Math.floor(Math.random() * wordBank.length)]);
+            } else {
+                arr = Array.from({length: 12}, () => sentenceBank[Math.floor(Math.random() * sentenceBank.length)]);
+            }
+            textToType = arr.join(' ');
+            textDisplay.innerHTML = textToType.split('').map(c => `<span>${c === ' ' ? '&nbsp;' : c}</span>`).join('');
+            const first = textDisplay.querySelector('span');
+            if (first) first.classList.add('caret');
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Tab') { e.preventDefault(); return; }
+            // Ignore modifier-only keys
+            if (['Shift','CapsLock','Control','Alt','Meta','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Home','End'].includes(e.key)) return;
+            if (!testInProgress && e.key !== 'Backspace') startTest();
+            if (!testInProgress) return;
+
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                processBackspace();
+            } else if (e.key.length === 1) {
+                processChar(e.key);
+            }
+
+            updateCaret();
+            updateStats();
+            scrollText();
+            textInput.value = ''; // reset to keep input clear for next keydown
+            lastInputValue = '';
+        }
+
+        function processChar(ch) {
+            if (!testInProgress && ch) startTest();
+            if (!testInProgress) return;
+            if (currentIndex >= textToType.length) return;
+            const spans = textDisplay.querySelectorAll('span');
+            const target = textToType[currentIndex];
+            totalTyped++;
+            if (ch === target) {
+                spans[currentIndex].classList.add('correct');
+                spans[currentIndex].dataset.status = 'correct';
+                correctChars++;
+            } else {
+                spans[currentIndex].classList.add('incorrect');
+                spans[currentIndex].dataset.status = 'incorrect';
+                incorrectChars++;
+            }
+            currentIndex++;
+            updateCaret();
+            updateStats();
+            scrollText();
+            updateProgress();
+        }
+
+        function processBackspace() {
+            if (currentIndex <= 0) return;
+            const spans = textDisplay.querySelectorAll('span');
+            currentIndex--;
+            totalTyped = Math.max(0, totalTyped - (spans[currentIndex].dataset.status ? 1 : 0));
+            if (spans[currentIndex].dataset.status === 'correct') correctChars--;
+            if (spans[currentIndex].dataset.status === 'incorrect') incorrectChars--;
+            spans[currentIndex].classList.remove('correct','incorrect');
+            delete spans[currentIndex].dataset.status;
+            updateCaret();
+            updateStats();
+        }
+
+        function updateCaret() {
+            const spans = textDisplay.querySelectorAll('span');
+            spans.forEach(s => s.classList.remove('caret'));
+            if (currentIndex < textToType.length) spans[currentIndex].classList.add('caret');
+        }
+
+        function startTest() {
+            testInProgress = true;
+            blurOverlay.classList.add('hidden');
+            document.body.classList.add('test-running');
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                timerEl.textContent = timeRemaining;
+                updateProgress();
+                if (timeRemaining <= 0) endTest();
+            }, 1000);
+        }
+
+        function updateProgress() {
+            const pct = ((testDuration - timeRemaining) / testDuration) * 100;
+            progressBar.style.width = pct + '%';
+            // Pulse timer when low
+            const timerCard = document.getElementById('timer-card');
+            if (timeRemaining <= 5 && testInProgress) {
+                timerCard.style.borderColor = 'rgba(248,113,113,0.5)';
+                timerEl.style.color = '#f87171';
+            }
+        }
+
+        function endTest() {
+            clearInterval(timerInterval);
+            testInProgress = false;
+            document.body.classList.remove('test-running');
+            textInput.blur();
+
+            const finalWpm = calcWPM();
+            const finalAcc = calcAccuracy();
+            const finalCpm = calcCPM();
+
+            document.getElementById('r-wpm').textContent = finalWpm;
+            document.getElementById('r-acc').textContent = finalAcc + '%';
+            document.getElementById('r-cpm').textContent = finalCpm;
+            document.getElementById('r-mistakes').textContent = incorrectChars;
+
+            // Rating
+            const rating = getRating(finalWpm);
+            document.getElementById('r-rating-label').textContent = rating.label;
+            document.getElementById('r-rating-text').textContent = rating.desc;
+            setTimeout(() => {
+                document.getElementById('r-rating-bar').style.width = Math.min(finalWpm / 150 * 100, 100) + '%';
+            }, 400);
+
+            modalBd.classList.add('show');
+        }
+
+        function getRating(wpm) {
+            if (wpm >= 120) return { label: '🚀 Warp Speed', desc: 'You are typing at inhuman velocity!' };
+            if (wpm >= 90)  return { label: '⚡ Hyperdrive', desc: 'Blazing fast — top 5% of typists!' };
+            if (wpm >= 70)  return { label: '🌟 Fast Orbit', desc: 'Faster than most humans on Earth.' };
+            if (wpm >= 50)  return { label: '✨ Cruising', desc: 'Solid speed — above average!' };
+            if (wpm >= 35)  return { label: '🌙 Suborbital', desc: 'Keep practicing — progress incoming!' };
+            return { label: '🪐 Launch Pad', desc: 'Every expert started right here.' };
+        }
+
+        function resetTest() {
+            clearInterval(timerInterval);
+            testInProgress = false;
+            document.body.classList.remove('test-running');
+            timeRemaining = testDuration;
+            currentIndex = 0;
+            totalTyped = 0;
+            correctChars = 0;
+            incorrectChars = 0;
+            lastInputValue = '';
+            textInput.value = '';
+
+            timerEl.textContent = testDuration;
+            timerEl.style.color = '';
+            wpmEl.textContent = '0';
+            cpmEl.textContent = '0';
+            accuracyEl.textContent = '100';
+            progressBar.style.width = '0%';
+            document.getElementById('timer-card').style.borderColor = '';
+
+            generateText();
+            blurOverlay.classList.remove('hidden');
+            textDisplay.style.transform = 'translateY(0)';
+            modalBd.classList.remove('show');
+            document.getElementById('r-rating-bar').style.width = '0%';
+        }
+
+        function updateStats() {
+            wpmEl.textContent = calcWPM();
+            cpmEl.textContent = calcCPM();
+            accuracyEl.textContent = calcAccuracy();
+
+            // Highlight active stats
+            ['wpm-card','cpm-card','acc-card'].forEach(id => {
+                document.getElementById(id).classList.toggle('active-stat', testInProgress);
+            });
+        }
+
+        function scrollText() {
+            const spans = textDisplay.querySelectorAll('span');
+            const cur = spans[currentIndex];
+            if (!cur) return;
+            const areaRect = typingArea.getBoundingClientRect();
+            const spanRect = cur.getBoundingClientRect();
+            const matrix = new DOMMatrix(getComputedStyle(textDisplay).transform);
+            const curY = matrix.m42;
+
+            if (spanRect.bottom > areaRect.bottom - 16) {
+                textDisplay.style.transform = `translateY(${curY - spanRect.height}px)`;
+            } else if (spanRect.top < areaRect.top + 16 && curY < 0) {
+                textDisplay.style.transform = `translateY(${curY + spanRect.height}px)`;
+            }
+        }
+
+        // ---------- CALC ----------
+        const calcWPM = () => {
+            const elapsed = testDuration - timeRemaining;
+            if (elapsed <= 0) return 0;
+            return Math.round((correctChars / 5) / (elapsed / 60)) || 0;
+        };
+        const calcCPM = () => {
+            const elapsed = testDuration - timeRemaining;
+            if (elapsed <= 0) return 0;
+            return Math.round(correctChars / (elapsed / 60)) || 0;
+        };
+        const calcAccuracy = () => {
+            if (totalTyped === 0) return 100;
+            return Math.round((correctChars / totalTyped) * 100) || 0;
+        };
+
+        // ---------- INIT ----------
+        resetTest();
+    })();
+    </script>
+</body>
+</html>
